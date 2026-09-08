@@ -11,8 +11,6 @@ make install     # npm ci
 make dev         # http://localhost:4321
 ```
 
-`make image` needs only Docker — Node runs inside the build stage.
-
 ## Layout
 
 ```
@@ -22,7 +20,7 @@ src/layouts/     Base.astro — head, nav, footer
 src/styles/      site.css, the comp's stylesheet kept near-verbatim
 src/config.ts    every off-site link, in one place
 scripts/         factcheck.sh, linkcheck.sh
-deploy/app/      this repo's half of the GitOps manifests
+public/          favicon and CNAME
 tmp/design/      gitignored copy of the design comp
 ```
 
@@ -42,16 +40,19 @@ list and the reasoning.
 make check       # build + factcheck + linkcheck
 ```
 
-## Verifying the container
-
-```sh
-make image
-docker run --rm -p 8080:8080 --read-only --tmpfs /tmp ghcr.io/yoalto-rnd/website:$(git rev-parse --short=12 HEAD)
-curl -f localhost:8080/healthz
-curl -o /dev/null -w '%{http_code}\n' localhost:8080/nope/   # must be 404, not 200
-```
-
 ## Deploying
 
-`deploy/app/` holds the Deployment, Service and HTTPRoutes. The Gateway, TLS certificate,
-DNS and Flux root are **not** in this repo — see [deploy/README.md](deploy/README.md).
+GitHub Pages, published by `.github/workflows/pages.yml` on every push to `main`. A push
+to `main` is a deploy.
+
+`public/CNAME` holds the custom domain (`yoalto.com`); GitHub issues the TLS certificate.
+If that file ever goes missing from the build, Pages drops back to a `github.io` address
+and every inbound link breaks — `make check` and CI both assert it is there.
+
+DNS for the apex points at GitHub's Pages addresses:
+
+```
+185.199.108.153   185.199.109.153   185.199.110.153   185.199.111.153
+```
+
+with `www.yoalto.com` as a CNAME to `yoalto-rnd.github.io`.

@@ -1,0 +1,70 @@
+# Build the site, verify it, and publish to GitHub Pages.
+#
+# Pages serves yoalto.com directly from this workflow's artifact — there is no image, no
+# cluster and no ingress to configure. `public/CNAME` carries the custom domain and GitHub
+# issues the certificate.
+#
+# The verify job is what keeps the design comp's fabricated copy out of the published site.
+# It runs on pull requests too, where deployment does not.
+name: pages
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # Never let two deploys race; a queued run supersedes an older one rather than
+  # interleaving with it.
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: No fabricated claims
+        run: ./scripts/factcheck.sh dist
+      - name: No dead internal links
+        run: ./scripts/linkcheck.sh dist
+      - name: No client JavaScript
+        # The design needs none. A <script> tag appearing here is a design decision that
+        # should be made deliberately, not one that arrives with a dependency.
+        run: |
+          if grep -rl '<script' dist --include='*.html'; then
+            echo "unexpected <script> in build output" >&2
+            exit 1
+          fi
+          echo "✓ no client JavaScript"
+      - name: Custom domain is present
+        # Pages drops the custom domain if CNAME goes missing from the artifact, which
+        # silently moves the site to github.io and breaks every inbound link.
+        run: test -f dist/CNAME && cat dist/CNAME
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: verify
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

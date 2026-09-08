@@ -13,8 +13,8 @@ project that builds to static HTML — no client JavaScript, no server-side rend
 - `../infra/` — Talos clusters and the Flux bootstrap
 
 **Reading them is expected and necessary.** This site has no content of its own: every
-technical claim on it comes from `../yoalto`, and the build/deploy setup here is copied
-from `../garagemechanic/apps/webpage/`. Read freely — `cat`, `grep`, `ls`,
+technical claim on it comes from `../yoalto`, and the Astro conventions here follow
+`../garagemechanic/apps/webpage/`. Read freely — `cat`, `grep`, `ls`,
 `git -C ../yoalto show`, `ls-tree`. Avoid even `git fetch` in them; it writes refs.
 
 **Why.** Those repos are worked on by separate sessions, often concurrently. Editing files
@@ -24,8 +24,10 @@ see: a `git checkout` moves a branch out from under them, a stray file turns up 
 
 **What to do instead.** Make the change on this side, then say plainly what the other repo
 needs and let its owner apply it. A precise handoff — file, line, old value, new value — is
-the deliverable. The DNS, Gateway, TLS and Flux-root work this site needs in `../infra` is
-exactly such a handoff, and is not ours to apply.
+the deliverable.
+
+This site needs nothing from `../infra`: GitHub Pages serves it, and the DNS records are
+set at the registrar. There is deliberately no cluster, ingress or Flux wiring here.
 
 ## Source of truth
 
@@ -75,18 +77,29 @@ before any deploy; it runs in CI too.
 ## Build
 
 ```sh
-make dev        # astro dev on :4321          (needs node — `mise install`)
-make build      # astro build -> dist/        (needs node)
-make image      # container image             (Docker only — node runs inside)
-make factcheck  # fail on fabricated claims in dist/
+make dev        # astro dev on :4321
+make build      # astro build -> dist/
+make check      # build + factcheck + linkcheck — what CI runs
 ```
 
-`make image` deliberately needs no local node: the Dockerfile's first stage is `node:22`.
+## Deploying is a push
+
+The site is served by **GitHub Pages** at `yoalto.com`, published by
+`.github/workflows/pages.yml` on every push to `main`. There is no image, no cluster and
+no ingress — treat a push to `main` as a deploy.
+
+`public/CNAME` carries the custom domain. If it goes missing from the build output, Pages
+silently drops back to a `github.io` address and every inbound link breaks, so `make check`
+and CI both assert it is present.
 
 ## Conventions
 
-- **Static output, no client JS.** The design needs none. If a change would add a
-  `<script>` tag, that is a design decision to raise, not a detail to slip in.
+- **Static output, no client JS.** The design needs none, and Pages serves files only.
+  If a change would add a `<script>` tag, that is a design decision to raise, not a
+  detail to slip in.
+- **This repository is public.** It holds the marketing site and nothing else. Do not
+  add infrastructure topology, cluster details, internal hostnames or anything else
+  from `../infra` — that was the reason the container deployment was removed from here.
 - `src/styles/site.css` is the design comp's stylesheet, kept near-verbatim as the single
   source of visual truth. Prefer adding a class there over inventing a parallel system.
 - The comp used heavy inline `style=""`. Repeated patterns have been lifted into classes;

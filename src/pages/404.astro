@@ -1,0 +1,23 @@
+---
+// nginx returned 404 for unknown paths via `try_files … =404`. GitHub Pages instead
+// serves this file, so the behaviour has to be reproduced as a page: a wrong URL must
+// look wrong, not silently render something that looks fine.
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="Not found — Yoalto" description="That page does not exist.">
+  <section class="sec" style="border-bottom:none">
+    <div class="wrap">
+      <div class="crumb"><span>Yoalto</span><span>/</span><span>404</span></div>
+      <h1 style="margin:20px 0 0">Nothing here.</h1>
+      <p class="lead" style="margin-top:20px">
+        That address does not match a page on this site. It may have moved, or it may never
+        have existed — this site is young enough that both are plausible.
+      </p>
+      <div class="btn-row" style="margin-top:32px">
+        <a class="btn btn-dark" href="/">Back to the start</a>
+        <a class="btn btn-g" href="/protocol/">How Yoalto works</a>
+      </div>
+    </div>
+  </section>
+</Base>
