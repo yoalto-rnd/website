@@ -1,0 +1,26 @@
+---
+// The honest-framing device for the whole site.
+//
+// The comp shipped three tag styles for SDK maturity (Stable / Beta / Preview). They are
+// reused here as Shipped / In progress / Designed, so any capability the site mentions
+// states its maturity inline. That is what lets the site describe the architecture in
+// full without implying more is running than actually is — and it means no page needs an
+// apologetic "coming soon" banner.
+//
+// Amber for in-progress: it is genuinely a different kind of state from the other two,
+// and it puts the comp's unused --amb to work.
+interface Props {
+  status: 'shipped' | 'progress' | 'designed';
+}
+const { status } = Astro.props;
+
+const map = {
+  shipped: { cls: 'tag tag-t', label: 'Shipped' },
+  progress: { cls: 'tag tag-a', label: 'In progress' },
+  designed: { cls: 'tag tag-n', label: 'Designed' },
+} as const;
+
+const { cls, label } = map[status];
+---
+
+<span class={cls}>{label}</span>

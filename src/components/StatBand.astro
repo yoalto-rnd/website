@@ -1,0 +1,19 @@
+---
+// The comp used this band for live telemetry ("1,412,803 transactions / sec", "updated
+// 2s ago"). No such figures exist. It now carries protocol constants, which are real,
+// checkable in the source, and do not rot.
+interface Props {
+  stats: { value: string; label: string; note: string }[];
+}
+const { stats } = Astro.props;
+---
+
+<div class="statrow">
+  {stats.map((s) => (
+    <div class="stat">
+      <b>{s.value}</b>
+      <i>{s.label}</i>
+      <em>{s.note}</em>
+    </div>
+  ))}
+</div>

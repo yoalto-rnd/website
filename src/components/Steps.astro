@@ -1,0 +1,19 @@
+---
+// Numbered steps with a hairline above each — the comp's transaction-lifecycle list.
+interface Props {
+  steps: { title: string; body: string }[];
+}
+const { steps } = Astro.props;
+---
+
+<div class="steps">
+  {steps.map((s, i) => (
+    <div class="step">
+      <b>{String(i + 1).padStart(2, '0')}</b>
+      <div>
+        <h3>{s.title}</h3>
+        <p set:html={s.body} />
+      </div>
+    </div>
+  ))}
+</div>

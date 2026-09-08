@@ -1,0 +1,128 @@
+---
+import Base from '../layouts/Base.astro';
+import PageHead from '../components/PageHead.astro';
+import Note from '../components/Note.astro';
+import { site, repoFile } from '../config';
+
+// The comp shipped this as a documentation portal — eight topics, 151 pages, a search
+// box, a changelog. None of it exists. What does exist is a set of engineering design
+// documents in the core repository, so the page presents those and says plainly that
+// user-facing documentation has not been written. See CLAUDE.md.
+
+const docs = [
+  {
+    file: 'sync-design.md',
+    title: 'Sync & coordination design',
+    body: 'How 256 partitions coordinate validator sets and epochs without a runtime synchronous dependency on chain 0. Certificate format, when it is and is not needed, and the per-partition sync protocol.',
+  },
+  {
+    file: 'epoch-cert-protocol.md',
+    title: 'Epoch cert protocol',
+    body: 'How validator-set transitions are triggered, signed, distributed and verified. The mechanics behind the architectural role that the sync design establishes.',
+  },
+  {
+    file: 'transaction-roadmap.md',
+    title: 'Transaction-layer roadmap',
+    body: 'The architecture of the transaction layer: the account model, how the three action categories stack, what is built, and the order the rest should land in.',
+  },
+  {
+    file: 'implementation-status.md',
+    title: 'Implementation status',
+    body: 'Action-by-action status for coin, tokens, NFTs, attestations, trading and the marketplace, plus the cross-cutting deferrals. The source for the status tags across this site.',
+  },
+  {
+    file: 'consensus-readiness.md',
+    title: 'Consensus readiness',
+    body: 'Where the HotStuff implementation stands — what is complete, what is next, and the verification suites that back the claim.',
+  },
+  {
+    file: 'wallet-contract.md',
+    title: 'Wallet contract',
+    body: 'The behavioural contract a wallet must implement to interact with Yoalto correctly. What a wallet must do, rather than the wire format.',
+  },
+  {
+    file: 'cross-partition-sync-ordering.md',
+    title: 'Cross-partition sync ordering',
+    body: 'An audit of a fresh-sync hazard in which a lagging validator could apply a receive before the send that funded it, and the fix.',
+  },
+  {
+    file: 'security-audit-2026-07.md',
+    title: 'Security review, July 2026',
+    body: 'An internal adversarial pass over roughly 41k lines and 104 packages. Twelve findings, all fixed. It does not conclude that the codebase is clean.',
+  },
+];
+---
+
+<Base
+  current="docs"
+  title="Documents — Yoalto"
+  description="Yoalto's engineering design documents: sync and coordination, the epoch cert protocol, the transaction-layer roadmap, and implementation status."
+>
+  <PageHead
+    crumb="Documents"
+    title="Design documents,<br />not a manual."
+    lead="Yoalto has no user documentation yet — no tutorials, no API reference, no guides. What it has is the set of design documents the protocol was built from, which are more detailed than a manual would be and considerably less friendly. They are listed here so you can see what the thinking actually is."
+  />
+
+  <section class="sec">
+    <div class="wrap">
+      {!site.sourceIsPublic && (
+        <div style="margin-bottom:32px">
+          <Note>
+            The repository these documents live in is private, so the entries below are not links
+            yet. They are listed with their filenames so that when the source opens, you know what
+            you are looking for — and so this page does not pretend to a library it cannot show you.
+          </Note>
+        </div>
+      )}
+      <div class="eyebrow">In the repository</div>
+      <h2 style="margin:12px 0 8px;max-width:700px">What has been written down.</h2>
+      <div class="g2" style="margin-top:32px">
+        {docs.map((d) => {
+          const href = repoFile(`${site.docsPath}/${d.file}`);
+          return (
+            <div class="feat">
+              <div class="feat-h">
+                <b class="mono">{d.file}</b>
+              </div>
+              <h3 style="margin:10px 0 0">
+                {href ? <a href={href}>{d.title}</a> : d.title}
+              </h3>
+              <p style="margin-left:0">{d.body}</p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  </section>
+
+  <section class="sec sec-t">
+    <div class="wrap">
+      <div class="split">
+        <div>
+          <div class="eyebrow">Interfaces</div>
+          <h2 style="margin:12px 0 18px">Where to look instead.</h2>
+          <p class="lead" style="max-width:100%">
+            Until there is a reference, the interfaces themselves are the documentation. The
+            JSON-RPC method set and the CLI are both small enough to read end to end, and both are
+            listed on the developers page with their real signatures.
+          </p>
+          <div class="btn-row" style="margin-top:24px">
+            <a class="btn" href="/developers/#cli">CLI and JSON-RPC</a>
+            <a class="btn btn-g" href="/protocol/">Protocol overview</a>
+          </div>
+        </div>
+        <div>
+          <div class="eyebrow">Whitepaper</div>
+          <h2 style="margin:12px 0 18px">There isn't a current one.</h2>
+          <p class="lead" style="max-width:100%">
+            A whitepaper exists in the repository, but it describes Flink — the block&#8209;lattice
+            design Yoalto grew out of, with different architecture and different numbers. Publishing
+            it here would misrepresent what Yoalto is, so it is deliberately not linked. The design
+            documents above are the accurate account.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>

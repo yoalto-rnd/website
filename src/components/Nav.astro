@@ -1,0 +1,38 @@
+---
+import Logo from './Logo.astro';
+
+// `current` marks the active link with aria-current, which is the only thing that
+// differed between the seven copies of this nav in the design comp.
+//
+// The comp's "Explorer" item is deliberately renamed to "Network": there is no block
+// explorer, and a nav item promising one is the most misleading thing the site could
+// ship. The comp's "YLT $0.0421" price ticker is dropped outright — wrong ticker, and
+// no market exists. See CLAUDE.md.
+interface Props {
+  current?: string;
+}
+const { current } = Astro.props;
+
+const links = [
+  { href: '/protocol/', label: 'Protocol', key: 'protocol' },
+  { href: '/developers/', label: 'Developers', key: 'developers' },
+  { href: '/validators/', label: 'Validators', key: 'validators' },
+  { href: '/network/', label: 'Network', key: 'network' },
+  { href: '/docs/', label: 'Docs', key: 'docs' },
+  { href: '/about/', label: 'About', key: 'about' },
+];
+---
+
+<nav class="nav">
+  <div class="nav-l">
+    <a class="logo" href="/"><Logo /><span>Yoalto</span></a>
+    <div class="nav-links">
+      {links.map((l) => (
+        <a href={l.href} aria-current={current === l.key ? 'page' : undefined}>{l.label}</a>
+      ))}
+    </div>
+  </div>
+  <div class="nav-r">
+    <a class="btn" href="/developers/">Start building</a>
+  </div>
+</nav>

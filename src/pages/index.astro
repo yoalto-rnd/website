@@ -1,0 +1,208 @@
+---
+import Base from '../layouts/Base.astro';
+import SpecTable from '../components/SpecTable.astro';
+import StatBand from '../components/StatBand.astro';
+import Terminal from '../components/Terminal.astro';
+import PartitionMap from '../components/PartitionMap.astro';
+import Feature from '../components/Feature.astro';
+import DataTable from '../components/DataTable.astro';
+import StatusTag from '../components/StatusTag.astro';
+import StatusBar from '../components/StatusBar.astro';
+
+const glance = [
+  { label: 'Partitions', value: '256 · chain 0 + 255' },
+  { label: 'Target block time', value: '500 ms' },
+  { label: 'Epoch length', value: '172,800 views (~24 h)' },
+  { label: 'Consensus', value: 'HotStuff · 2-chain commit' },
+  { label: 'Fault tolerance', value: 'f < n/3' },
+  { label: 'Validator signatures', value: 'BLS (blst)' },
+  { label: 'Account signatures', value: 'Ed25519' },
+  { label: 'Storage', value: 'FoundationDB · JMT' },
+  { label: 'Native token', value: 'YOA' },
+  { label: 'License', value: 'Apache-2.0' },
+];
+
+// Constants read out of the source, not measurements. There is no throughput figure for
+// Yoalto anywhere in the codebase, and the site does not invent one — see CLAUDE.md.
+const constants = [
+  { value: '256', label: 'partitions', note: 'chain 0 + 255 payment' },
+  { value: '500 ms', label: 'target block time', note: 'per view, per partition' },
+  { value: '24 h', label: 'epoch length', note: '172,800 views' },
+  { value: '48 B', label: 'aggregate signature', note: 'BLS · any number of signers' },
+];
+
+const quickstart = [
+  { kind: 'comment', text: 'build the CLI from source' },
+  { kind: 'cmd', text: 'go build -o yoalto ./apps/cli' },
+  { kind: 'gap' },
+  { kind: 'comment', text: 'a keystore is an identity; the identity fixes your partition' },
+  { kind: 'cmd', text: './yoalto key generate --out dev.key' },
+  { kind: 'cmd', text: './yoalto key show --key dev.key' },
+  { kind: 'ok', text: 'claim      0x9f3c…a71d' },
+  { kind: 'ok', text: 'partition  0x2d' },
+  { kind: 'gap' },
+  { kind: 'comment', text: "anchor a file's SHA-256 on chain, then check it locally" },
+  { kind: 'cmd', text: './yoalto attest invoice.pdf --key dev.key' },
+  { kind: 'cmd', text: './yoalto prove invoice.pdf --issuer 0x9f3c…a71d' },
+  { kind: 'ok', text: '✓ inclusion proof verified' },
+  { kind: 'note', text: '→ verified by the SDK, locally — the node is not trusted' },
+  { kind: 'caret' },
+] as const;
+
+const built = [
+  { name: 'Native coin (YOA)', status: 'shipped', note: 'send, receive, change' },
+  { name: 'Fungible tokens', status: 'shipped', note: 'deploy, mint, burn, send, receive' },
+  { name: 'NFTs', status: 'shipped', note: 'collection deploy, mint, transfer, receive, burn' },
+  { name: 'Attestations', status: 'shipped', note: 'single and batched, hash-chain accumulator' },
+  { name: 'NFT marketplace', status: 'shipped', note: 'fixed-price listings, offers, royalty enforcement' },
+  { name: 'Proof of stake', status: 'shipped', note: 'epoch rotation, DKG group key committed on chain' },
+  { name: 'Multi-node consensus', status: 'shipped', note: 'HotStuff, end-to-end across partitions' },
+  { name: 'Validator registration', status: 'designed', note: 'genesis validators only; needs proof-of-possession' },
+  { name: 'Slashing', status: 'designed', note: 'two reasons defined; fault detection not built' },
+  { name: 'Validator rewards', status: 'designed', note: 'fees are burned today' },
+  { name: 'Order-book DEX', status: 'designed', note: 'schema only, engine deferred' },
+  { name: 'EVM on chain 0', status: 'designed', note: 'smart contracts and governance' },
+  { name: 'Public testnet', status: 'designed', note: 'private dev clusters today' },
+] as const;
+---
+
+<Base
+  title="Yoalto — 256 partitions. One validator set."
+  description="A Go Layer 1 that executes native payments across 255 parallel partitions, with validators that scale horizontally over a shared FoundationDB cluster."
+>
+  <header class="sec" style="padding-bottom:0">
+    <div class="wrap">
+      <div class="split">
+        <div>
+          <div class="pill"><i class="dot"></i>PRE-MAINNET · DEVNET RUNNING · APACHE-2.0</div>
+          <h1 style="margin:26px 0 0">256 partitions.<br />One validator<br />set.</h1>
+          <p class="lead" style="margin-top:24px">
+            Yoalto executes native payments across 255 parallel partitions, each with its own
+            accounts and its own block stream, coordinated by a single validator set. Payments
+            need no cross&#8209;partition coordination at all — and a validator is a pod cluster
+            over shared FoundationDB, so throughput grows by adding pods rather than by buying a
+            bigger machine.
+          </p>
+          <div class="btn-row" style="margin:32px 0 8px">
+            <a class="btn btn-dark" href="/protocol/">How it works</a>
+            <a class="btn btn-g btn-mono" href="/developers/">$ go build ./apps/cli</a>
+          </div>
+        </div>
+        <SpecTable heading="Protocol at a glance" rows={glance} />
+      </div>
+    </div>
+
+    <div class="sec-t" style="margin-top:clamp(40px,5vw,64px);border-top:1px solid var(--line);padding:26px 0 30px">
+      <div class="wrap">
+        <div class="sec-h" style="margin-bottom:12px">
+          <span class="eyebrow">Partition address space · 0x00 → 0xFF</span>
+          <a class="eyebrow" href="/protocol/#partitions" style="color:var(--acc)">
+            chain 0 is the system chain · how routing works →
+          </a>
+        </div>
+        <PartitionMap />
+        <div class="legend" style="margin-top:14px">
+          <span><i style="background:var(--amb)"></i>chain 0 — system</span>
+          <span><i style="background:linear-gradient(90deg,var(--acc),oklch(.82 .07 172))"></i>0x01 → 0xFF — native payments, shaded by address</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section class="sec">
+    <div class="wrap">
+      <div class="eyebrow">Why Yoalto</div>
+      <h2 style="margin:12px 0 40px;max-width:760px">
+        Four properties that fall out of the architecture.
+      </h2>
+      <div class="g2">
+        <Feature num="01" title="Parallel by partition">
+          Every account has a deterministic home partition, derived by hashing its identity —
+          computable by any client, assigned by no sequencer. Native payments execute there and
+          nowhere else, so 255 partitions advance without coordinating.
+        </Feature>
+        <Feature num="02" title="Validators scale sideways">
+          A validator is not one machine. It is a pod cluster sharing a FoundationDB cluster,
+          with the partitions distributed across pods. More capacity means more pods, and
+          FoundationDB handles replication and tiered storage underneath.
+        </Feature>
+        <Feature num="03" title="Compact verifiability">
+          Validator-set changes travel as signed EpochCerts — BLS quorum certificates that
+          aggregate to one 48&#8209;byte signature no matter how many signers. A late-joining node
+          rebuilds the entire validator-set history from certs already in each partition's
+          block stream.
+        </Feature>
+        <Feature num="04" title="Crypto-agility by construction">
+          An account's identity is a claim hash, frozen when the account opens and kept separate
+          from the key that signs for it. Rotating to a different signature scheme is one
+          transaction, and it disturbs neither sends nor receives.
+        </Feature>
+      </div>
+      <div style="margin-top:36px"><a href="/protocol/">Architecture and security model →</a></div>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="wrap">
+      <div class="sec-h">
+        <h2 style="max-width:640px">The numbers that are actually fixed.</h2>
+        <span class="mono dim" style="font-size:12px">set in code · not measured</span>
+      </div>
+      <StatBand stats={constants} />
+      <p class="dim" style="font-size:13px;line-height:1.6;margin-top:28px;max-width:620px">
+        There is no published throughput figure for Yoalto, because none has been measured on a
+        network. When there is one, it will arrive with the harness and the hardware beside it.
+      </p>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <div class="split" style="align-items:center">
+        <div>
+          <div class="eyebrow">Build on Yoalto</div>
+          <h2 style="margin:12px 0 18px">Anchor a document. Verify it yourself.</h2>
+          <p class="lead" style="max-width:460px">
+            The toolchain is Go. Bring up a devnet, record a file's hash on chain, and check the
+            inclusion proof — the SDK verifies proofs client&#8209;side, so nothing in this loop
+            asks you to trust the node you queried.
+          </p>
+          <div class="btn-row" style="margin-top:28px">
+            <a class="btn" href="/developers/">Developer quickstart</a>
+            <a class="btn btn-g" href="/docs/">Design documents</a>
+          </div>
+        </div>
+        <Terminal title="~/yoalto — zsh" meta="devnet" lines={quickstart} />
+      </div>
+    </div>
+  </section>
+
+  <section class="sec sec-t">
+    <div class="wrap">
+      <div class="sec-h">
+        <div>
+          <div class="eyebrow">Status</div>
+          <h2 style="margin-top:12px">What is built, and what is not.</h2>
+        </div>
+        <span class="mono dim" style="font-size:12px;max-width:280px;text-align:right;line-height:1.7">
+          pre-mainnet · three private dev clusters
+        </span>
+      </div>
+      <div style="margin-bottom:32px"><StatusBar items={built} /></div>
+      <DataTable headers={['Capability', 'Status', 'Notes']}>
+        {built.map((row) => (
+          <tr>
+            <td>{row.name}</td>
+            <td><StatusTag status={row.status} /></td>
+            <td class="muted">{row.note}</td>
+          </tr>
+        ))}
+      </DataTable>
+      <p class="dim" style="font-size:13px;line-height:1.6;margin-top:18px;max-width:660px">
+        Yoalto has no mainnet and no public testnet. There is no token sale, no market, and no
+        published tokenomics — the native token exists in the protocol as gas and stake, and
+        nothing beyond that has been decided.
+      </p>
+    </div>
+  </section>
+</Base>

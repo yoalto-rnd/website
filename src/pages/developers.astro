@@ -1,0 +1,234 @@
+---
+import Base from '../layouts/Base.astro';
+import PageHead from '../components/PageHead.astro';
+import Terminal from '../components/Terminal.astro';
+import CodeBlock from '../components/CodeBlock.astro';
+import DataTable from '../components/DataTable.astro';
+import StatusTag from '../components/StatusTag.astro';
+import Lines from '../components/Lines.astro';
+import Note from '../components/Note.astro';
+import Card from '../components/Card.astro';
+import { site } from '../config';
+
+const loop = [
+  { kind: 'comment', text: 'build the CLI from source' },
+  { kind: 'cmd', text: 'go build -o yoalto ./apps/cli' },
+  { kind: 'cmd', text: './yoalto version --rpc http://localhost:3000/rpc/v1' },
+  { kind: 'gap' },
+  { kind: 'comment', text: 'a keystore is an identity; the identity fixes the partition' },
+  { kind: 'cmd', text: './yoalto key generate --out dev.key' },
+  { kind: 'cmd', text: './yoalto key show --key dev.key' },
+  { kind: 'ok', text: 'claim      0x9f3c…a71d' },
+  { kind: 'ok', text: 'partition  0x2d' },
+  { kind: 'gap' },
+  { kind: 'comment', text: 'read the account, then anchor a file and check the proof' },
+  { kind: 'cmd', text: './yoalto account --key dev.key' },
+  { kind: 'cmd', text: './yoalto attest invoice.pdf --key dev.key' },
+  { kind: 'cmd', text: './yoalto prove invoice.pdf --issuer 0x9f3c…a71d' },
+  { kind: 'ok', text: '✓ proof verified locally' },
+  { kind: 'note', text: '→ the proof is checked client-side; the node is not trusted' },
+  { kind: 'caret' },
+];
+
+const goCode = `<span class="k">package</span> main
+
+<span class="k">import</span> (
+    <span class="s">"context"</span>
+    <span class="s">"log"</span>
+
+    <span class="s">"github.com/yoalto-rnd/yoalto/libs/sdk/pkg/api"</span>
+    <span class="s">"github.com/yoalto-rnd/yoalto/libs/sdk/pkg/yoalto"</span>
+)
+
+<span class="k">func</span> <span class="a">main</span>() {
+    ctx := context.<span class="a">Background</span>()
+
+    conn, closer, err := api.<span class="a">Dial</span>(ctx, <span class="s">"http://localhost:3000/rpc/v1"</span>, <span class="s">""</span>)
+    <span class="k">if</span> err != <span class="k">nil</span> {
+        log.<span class="a">Fatal</span>(err)
+    }
+    <span class="k">defer</span> <span class="a">closer</span>()
+
+    c := &amp;yoalto.Client{API: conn}
+
+    <span class="c">// Fetches the proof over JSON-RPC, then verifies it locally.</span>
+    <span class="c">// A lying node fails the check rather than the check trusting it.</span>
+    found, verified, _, err := c.<span class="a">ProveFile</span>(ctx, <span class="s">"invoice.pdf"</span>, issuer, pid)
+    <span class="k">if</span> err != <span class="k">nil</span> {
+        log.<span class="a">Fatal</span>(err)
+    }
+    log.<span class="a">Printf</span>(<span class="s">"found=%v verified=%v"</span>, found, verified)
+}`;
+
+const cli = [
+  { label: 'yoalto key generate', value: 'Generate a keypair, optionally writing a keystore' },
+  { label: 'yoalto key show', value: 'Show the identity: pubkey, claim, partition' },
+  { label: 'yoalto account', value: 'Query an account — balance, nonce, tokens' },
+  { label: 'yoalto attest', value: 'Hash a file (SHA-256) and record it on chain' },
+  { label: 'yoalto prove', value: 'Prove a file is attested, verifying the proof locally' },
+  { label: 'yoalto submit', value: 'Submit a raw BCS-encoded signed transaction' },
+  { label: 'yoalto version', value: 'Print the API service version' },
+];
+
+const rpc = [
+  { label: 'Yoalto.Version', value: 'Service version — also the liveness probe' },
+  { label: 'Yoalto.GetAccount', value: 'partition, claim → balance, nonce, tokens' },
+  { label: 'Yoalto.SubmitTransaction', value: 'partition, raw BCS hex → admission ack' },
+  { label: 'Yoalto.GetStateProof', value: 'partition, tag, key → state proof' },
+  { label: 'Yoalto.GetTxInclusionProof', value: 'partition, height, tx hash' },
+  { label: 'Yoalto.GetAttestationProofByHash', value: 'partition, issuer, content hash' },
+];
+---
+
+<Base
+  current="developers"
+  title="Developers — Yoalto"
+  description="Build against Yoalto in Go: a CLI, a Go SDK that verifies proofs locally, and JSON-RPC 2.0 over HTTP and WebSocket."
+>
+  <PageHead
+    crumb="Developers"
+    title="Write Go.<br />Verify it yourself."
+    lead="The toolchain is Go, and it is the same code the node runs. The SDK's distinguishing habit is that it checks proofs on your machine rather than believing the node that served them — so a compromised or lying endpoint fails the check instead of passing bad data through it."
+  >
+    <div class="btn-row" style="margin-top:28px">
+      <a class="btn" href="/docs/">Design documents</a>
+      <a class="btn btn-g" href="/protocol/">How the protocol works</a>
+    </div>
+  </PageHead>
+
+  <section class="sec">
+    <div class="wrap">
+      <div class="split" style="align-items:start">
+        <Terminal title="~/yoalto — zsh" meta="devnet" lines={loop} />
+        <CodeBlock title="main.go" meta="go · libs/sdk" code={goCode} />
+      </div>
+      <div style="margin-top:28px;max-width:760px">
+        <Note>
+          There is no installer and no release binary yet — no <span class="mono">curl | sh</span>,
+          no package manager. You build from source, and the source is not public yet either. If
+          that is a blocker for you, it is worth telling us.
+        </Note>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="sdk">
+    <div class="wrap">
+      <div class="eyebrow">SDKs</div>
+      <h2 style="margin:12px 0 28px">One language, honestly.</h2>
+      <DataTable headers={['Language', 'Package', 'Status', 'Covers']}>
+        <tr>
+          <td>Go</td>
+          <td class="m">libs/sdk</td>
+          <td><StatusTag status="shipped" /></td>
+          <td class="muted">Account and key handling, tx build + sign, JSON-RPC client, local proof verification</td>
+        </tr>
+        <tr>
+          <td>TypeScript</td><td class="m">—</td>
+          <td><StatusTag status="designed" /></td>
+          <td class="muted">Not started</td>
+        </tr>
+        <tr>
+          <td>Rust, Python, Swift, Kotlin</td><td class="m">—</td>
+          <td><StatusTag status="designed" /></td>
+          <td class="muted">Not started</td>
+        </tr>
+      </DataTable>
+      <p class="dim" style="font-size:13px;margin-top:14px;max-width:660px">
+        The Go SDK is the only client that exists. Everything else on this list is an intention,
+        and is marked as one.
+      </p>
+    </div>
+  </section>
+
+  <section class="sec sec-t" id="cli">
+    <div class="wrap">
+      <div class="split">
+        <div>
+          <div class="eyebrow">CLI reference</div>
+          <h2 style="margin:12px 0 20px">Seven commands.</h2>
+          <Lines rows={cli} />
+          <p class="dim" style="font-size:13px;line-height:1.6;margin-top:18px;max-width:520px">
+            Global flags: <span class="mono">--rpc</span> (defaults to
+            <span class="mono">http://localhost:3000/rpc/v1</span>),
+            <span class="mono">--key</span> for a keystore, and
+            <span class="mono">--api-key</span> when the server requires one.
+          </p>
+        </div>
+        <div>
+          <div class="eyebrow">JSON-RPC</div>
+          <h2 style="margin:12px 0 20px">One endpoint, HTTP or WebSocket.</h2>
+          <Lines rows={rpc} />
+          <p class="dim" style="font-size:13px;line-height:1.6;margin-top:18px;max-width:520px">
+            JSON-RPC 2.0 on <span class="mono">/rpc/v1</span>; WebSocket upgrades on the same path.
+            Behind a body cap, optional API key, per-caller rate limit and a WS connection cap.
+            <span class="mono">/health</span> is unauthenticated. Trading methods
+            (<span class="mono">GetOrderBook</span>, <span class="mono">SubscribeTrades</span>) are
+            present but the matching engine is not built.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <div class="eyebrow">What to build</div>
+      <h2 style="margin:12px 0 28px;max-width:720px">What the action layer supports today.</h2>
+      <div class="g3">
+        <Card title="Proof of existence">
+          Hash a document, record it under your issuer, and let anyone verify it later without
+          trusting your server or ours. Batched attestations share one hash-chain accumulator per
+          partition.
+        </Card>
+        <Card title="Record anchoring">
+          The first real integration does exactly this — a vehicle-service platform anchoring PDF
+          hashes through the SDK, so a service record can be checked years later by someone who
+          never trusted the workshop.
+        </Card>
+        <Card title="Tokens and NFTs">
+          Fungible tokens with deploy, mint, burn, send and receive; NFT collections with mint,
+          transfer and burn. Both run end-to-end across partitions.
+        </Card>
+        <Card title="NFT marketplace">
+          Fixed-price listings, per-NFT offers and royalty enforcement, shipped end-to-end.
+          Cancellation is two-step and completed by a node keeper.
+        </Card>
+        <Card title="Native payments">
+          YOA send, receive and change, with a free quota of ten fee-less transactions per rolling
+          hour before a fee is required.
+        </Card>
+        <Card title="Order-book trading">
+          Action types, state structs and store signatures exist. The matching engine does not —
+          this one is a schema you could build against, not a feature you can use.
+        </Card>
+      </div>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="wrap">
+      <div class="split" style="align-items:center">
+        <div>
+          <h2>Getting in touch.</h2>
+          <p class="dim" style="margin-top:16px;font-size:16px;line-height:1.6;max-width:520px">
+            Yoalto is pre&#8209;mainnet and the repository is private, so there is no issue tracker
+            to point you at yet and no community to join. That will change; until it does, this
+            page will not invent one.
+          </p>
+        </div>
+        <div>
+          <div style="border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:20px">
+            <div class="eyebrow">Source</div>
+            <div class="mono" style="font-size:13.5px;margin:8px 0 6px">
+              {site.sourceIsPublic ? 'github.com/yoalto-rnd/yoalto' : 'github.com/yoalto-rnd/yoalto — private'}
+            </div>
+            <div class="dim" style="font-size:12.5px">
+              Go monorepo · Apache-2.0 · {site.sourceIsPublic ? 'open' : 'not public yet'}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>

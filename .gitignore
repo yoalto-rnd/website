@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.astro/
+
+# Local copy of the design comp, kept for reference while working.
+# The comp's copy is fabricated — see CLAUDE.md. Layout only.
+tmp/

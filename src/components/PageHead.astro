@@ -1,0 +1,19 @@
+---
+// The `.phead` block every interior page opens with: breadcrumb, title, lead.
+// Buttons go in the default slot.
+interface Props {
+  crumb: string;
+  title: string;
+  lead: string;
+}
+const { crumb, title, lead } = Astro.props;
+---
+
+<header class="phead">
+  <div class="wrap">
+    <div class="crumb"><span>Yoalto</span><span>/</span><span>{crumb}</span></div>
+    <h1 style="margin-top:14px" set:html={title} />
+    <p class="lead" style="margin-top:20px" set:html={lead} />
+    <slot />
+  </div>
+</header>

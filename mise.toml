@@ -1,0 +1,5 @@
+# Node is needed only for `make dev` and `make build`. The container image builds
+# without it — the Dockerfile's first stage is node:22 — so a machine with just
+# Docker can still produce a deployable artifact.
+[tools]
+node = "22"

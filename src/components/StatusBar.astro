@@ -1,0 +1,35 @@
+---
+// A proportional bar over a set of capabilities, reusing the comp's allocation block.
+//
+// The comp used `.alloc` for a token distribution that does not exist. Here the segments
+// are counts of real capabilities from the same table they sit above — so the bar is
+// derived from the page's own data and cannot drift away from it.
+interface Props {
+  items: readonly { status: 'shipped' | 'progress' | 'designed' }[];
+}
+const { items } = Astro.props;
+
+const order = ['shipped', 'progress', 'designed'] as const;
+const meta = {
+  shipped: { label: 'Shipped', color: 'var(--tea)' },
+  progress: { label: 'In progress', color: 'var(--amb)' },
+  designed: { label: 'Designed', color: 'rgba(14,15,17,.18)' },
+} as const;
+
+const counts = order
+  .map((s) => ({ status: s, n: items.filter((i) => i.status === s).length, ...meta[s] }))
+  .filter((s) => s.n > 0);
+
+const total = items.length;
+---
+
+<div class="alloc">
+  {counts.map((c) => (
+    <span style={`width:${(c.n / total) * 100}%;background:${c.color}`}></span>
+  ))}
+</div>
+<div class="legend" style="margin-top:14px">
+  {counts.map((c) => (
+    <span><i style={`background:${c.color}`}></i>{c.label} · {c.n} of {total}</span>
+  ))}
+</div>

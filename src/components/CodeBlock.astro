@@ -1,0 +1,16 @@
+---
+// A dark code panel with a filename header, matching the comp's `.code` block.
+// Content is passed as pre-escaped HTML so the comp's syntax-colour spans
+// (.k .a .s .c .out) can be used.
+interface Props {
+  title: string;
+  meta?: string;
+  code: string;
+}
+const { title, meta, code } = Astro.props;
+---
+
+<div class="code">
+  <div class="term-h"><span>{title}</span>{meta && <span>{meta}</span>}</div>
+  <pre set:html={code} />
+</div>

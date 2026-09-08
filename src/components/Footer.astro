@@ -1,0 +1,75 @@
+---
+import Logo from './Logo.astro';
+import { site } from '../config';
+
+// The comp's footer was byte-identical across all seven pages, so it lives here once.
+//
+// Its link columns were largely aspirational — Audits, Bounties, Staking, Tokenomics,
+// Careers, Press, Governance all pointed at pages or facts that do not exist. Rebuilt
+// against destinations that are real. The comp's "Swiss foundation" blurb and its
+// "commit 4a2f1e · mainnet block 4,192,067" line are gone for the same reason.
+const columns = [
+  {
+    title: 'Protocol',
+    links: [
+      { href: '/protocol/', label: 'Overview' },
+      { href: '/protocol/#architecture', label: 'Architecture' },
+      { href: '/protocol/#lifecycle', label: 'Transaction lifecycle' },
+      { href: '/protocol/#security', label: 'Security model' },
+    ],
+  },
+  {
+    title: 'Developers',
+    links: [
+      { href: '/developers/', label: 'Quickstart' },
+      { href: '/developers/#sdk', label: 'Go SDK' },
+      { href: '/developers/#cli', label: 'CLI' },
+      { href: '/docs/', label: 'Design documents' },
+    ],
+  },
+  {
+    title: 'Network',
+    links: [
+      { href: '/network/', label: 'Status' },
+      { href: '/validators/', label: 'Staking' },
+      { href: '/protocol/#partitions', label: 'Partitions' },
+    ],
+  },
+  {
+    title: 'Project',
+    links: [
+      { href: '/about/', label: 'About' },
+      { href: '/about/#principles', label: 'Principles' },
+      ...(site.sourceIsPublic ? [{ href: site.repo, label: 'Source' }] : []),
+    ],
+  },
+];
+
+const year = new Date().getFullYear();
+---
+
+<footer class="sec foot" style="border-bottom:none">
+  <div class="wrap">
+    <div class="foot-top">
+      <div>
+        <div class="foot-mark"><Logo size="foot" /><span>Yoalto</span></div>
+        <p class="dim foot-blurb">
+          256 parallel payment partitions and one validator set. Written in Go,
+          Apache&#8209;2.0 licensed, and pre&#8209;mainnet.
+        </p>
+      </div>
+      <div class="foot-cols">
+        {columns.map((col) => (
+          <div>
+            <div class="eyebrow">{col.title}</div>
+            {col.links.map((l) => <a href={l.href}>{l.label}</a>)}
+          </div>
+        ))}
+      </div>
+    </div>
+    <div class="foot-b">
+      <span>&copy; {year} Yoalto</span>
+      <span>Pre-mainnet &middot; no public network yet</span>
+    </div>
+  </div>
+</footer>

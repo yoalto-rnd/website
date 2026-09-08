@@ -1,0 +1,133 @@
+---
+import Base from '../layouts/Base.astro';
+import PageHead from '../components/PageHead.astro';
+import PartitionMap from '../components/PartitionMap.astro';
+import Lines from '../components/Lines.astro';
+import Note from '../components/Note.astro';
+import StatBand from '../components/StatBand.astro';
+import DataTable from '../components/DataTable.astro';
+import StatusBar from '../components/StatusBar.astro';
+import StatusTag from '../components/StatusTag.astro';
+
+// The comp shipped this page as a live block explorer: tps counters, block and
+// transaction tables, per-shard load, "updated 2s ago". None of it has a data source —
+// there is no public network — so the page states what exists instead. See CLAUDE.md.
+
+const constants = [
+  { value: '256', label: 'partitions', note: 'chain 0 + 255 payment' },
+  { value: '3', label: 'dev clusters', note: 'private, single-node Talos' },
+  { value: '0', label: 'public networks', note: 'no mainnet, no testnet' },
+  { value: '500 ms', label: 'target block time', note: 'per view, per partition' },
+];
+
+const before = [
+  { name: 'Validator registration', status: 'designed', note: 'with proof-of-possession, so an address cannot be squatted' },
+  { name: 'Rewards and payouts', status: 'designed', note: 'fees are burned today; issuance is unset' },
+  { name: 'Slash evidence', status: 'designed', note: 'the penalty works; nothing raises the evidence' },
+  { name: 'Mempool gossip', status: 'designed', note: 'validators do not propagate transactions to each other' },
+  { name: 'Partition sync coordinator', status: 'progress', note: 'late-joiner catch-up across 256 partitions' },
+  { name: 'Public RPC and explorer', status: 'designed', note: 'nothing is exposed publicly' },
+] as const;
+---
+
+<Base
+  current="network"
+  title="Network — Yoalto"
+  description="The state of the Yoalto network: no mainnet, no public testnet, three private development clusters, and what has to land before that changes."
+>
+  <PageHead
+    crumb="Network"
+    title="There is no<br />public network."
+    lead="Yoalto runs on three private single&#8209;node development clusters. There is no mainnet, no public testnet, no faucet and no block explorer — so rather than showing you a dashboard of numbers we made up, this page says what exists and what has to happen before it does."
+  />
+
+  <section class="band">
+    <div class="wrap">
+      <StatBand stats={constants} />
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <div class="eyebrow">Partition address space · 0x00 → 0xFF</div>
+      <h2 style="margin:12px 0 24px;max-width:700px">256 partitions, one validator set.</h2>
+      <PartitionMap variant="grid" />
+      <div class="legend" style="margin-top:18px">
+        <span><i style="background:var(--amb)"></i>chain 0 — staking, validator set, epoch transitions</span>
+        <span><i style="background:var(--acc)"></i>0x01 → 0xFF — native payments, shaded by address</span>
+      </div>
+      <p class="dim" style="font-size:13px;line-height:1.6;margin-top:18px;max-width:660px">
+        This is a diagram of the address space, not a load display. Cell shading is uniform on
+        purpose: there is no network to measure, and varying it would imply per-partition traffic
+        nobody can observe.
+      </p>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <div class="split">
+        <div>
+          <div class="eyebrow">What runs today</div>
+          <h2 style="margin:12px 0 18px">Three development clusters.</h2>
+          <p class="lead" style="max-width:100%">
+            Three single&#8209;node Talos Kubernetes clusters, provisioned with OpenTofu and
+            reconciled by Flux. They exist so the team can run the node against real infrastructure
+            rather than a laptop. They are not reachable from the internet and they carry nothing of
+            value.
+          </p>
+          <div style="margin-top:22px">
+            <Lines
+              rows={[
+                { label: 'Clusters', value: 'Three, single-node, private' },
+                { label: 'Provisioning', value: 'OpenTofu → Talos Linux' },
+                { label: 'Reconciliation', value: 'Flux, from git' },
+                { label: 'Node packaging', value: 'Helm chart — reactor, broker, API server' },
+                { label: 'Bootstrap', value: 'devnet generator, in-repo' },
+                { label: 'Public access', value: 'None' },
+              ]}
+            />
+          </div>
+        </div>
+        <div>
+          <div class="eyebrow">Running one yourself</div>
+          <h2 style="margin:12px 0 18px">A devnet is the supported path.</h2>
+          <p class="lead" style="max-width:100%">
+            The repository ships a devnet bootstrap generator that produces the material for a local
+            network, and the e2e suite brings up multi&#8209;validator clusters in&#8209;process
+            against a FoundationDB container. That is currently the realistic way to see Yoalto
+            finalize a block.
+          </p>
+          <div style="margin-top:22px">
+            <Note>
+              The source repository is not public yet, so "run it yourself" is presently only true
+              for people with access. That is a real limitation and not one we are going to phrase
+              around.
+            </Note>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec sec-t">
+    <div class="wrap">
+      <div class="eyebrow">Before a public network</div>
+      <h2 style="margin:12px 0 28px;max-width:720px">What has to land first.</h2>
+      <div style="margin-bottom:32px"><StatusBar items={before} /></div>
+      <DataTable headers={['Item', 'Status', 'Why it blocks a public network']}>
+        {before.map((r) => (
+          <tr>
+            <td>{r.name}</td>
+            <td><StatusTag status={r.status} /></td>
+            <td class="muted">{r.note}</td>
+          </tr>
+        ))}
+      </DataTable>
+      <p class="dim" style="font-size:13px;line-height:1.6;margin-top:18px;max-width:680px">
+        No dates are given because none have been set. When a testnet exists it will be announced
+        with the genesis material and the instructions to join it, not with a countdown.
+      </p>
+    </div>
+  </section>
+</Base>

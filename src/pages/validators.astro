@@ -1,0 +1,193 @@
+---
+import Base from '../layouts/Base.astro';
+import PageHead from '../components/PageHead.astro';
+import Steps from '../components/Steps.astro';
+import Lines from '../components/Lines.astro';
+import Note from '../components/Note.astro';
+import SpecTable from '../components/SpecTable.astro';
+import DataTable from '../components/DataTable.astro';
+import StatusTag from '../components/StatusTag.astro';
+import StatusBar from '../components/StatusBar.astro';
+
+const legs = [
+  {
+    title: 'The signed leg, on your own partition',
+    body: `Accounts never live on chain 0 — the partition map returns [1, 255] and never 0 — so a
+      chain-0 applier cannot see your balance. Bonding therefore starts where your account is:
+      nonce, fee and balance are checked there, and a pending staking op is written.`,
+  },
+  {
+    title: 'The system leg, on chain 0',
+    body: `A keeper drains that queue into a system action on chain 0, which does the staking half.
+      One queue and one system action serve bond, cancel and unbond alike, so the parts that must
+      be right every time are written once rather than three times.`,
+  },
+  {
+    title: 'Activation at the boundary',
+    body: `Newly bonded stake is inert until an epoch boundary activates it: no rewards, no
+      slashing exposure, no voting power. Share-birth and weight-birth become the same event,
+      which makes reward-sniping unrepresentable rather than merely detected.`,
+  },
+  {
+    title: 'Exit, then wait',
+    body: `Unbonding moves stake to a second pool and queues an exit. The boundary stamps the
+      clock — the chain-0 leg has no trustworthy view of the current epoch, and a
+      proposer-supplied one could shorten somebody's delay.`,
+  },
+];
+
+const pools = [
+  { label: 'Accounting', value: 'Shares, not coins' },
+  { label: 'Pools per validator', value: 'Bonded + unbonding' },
+  { label: 'Reward', value: 'Raises pool stake without minting shares' },
+  { label: 'Slash', value: 'Lowers pool stake — dilution is the penalty' },
+  { label: 'Unbonding stake', value: 'Slashed, never rewarded' },
+  { label: 'Commission', value: 'Basis points, max 10,000' },
+  { label: 'Unbonding delay', value: 'Genesis parameter — no value set yet' },
+  { label: 'Epoch reward', value: 'Genesis parameter — no value set yet' },
+];
+
+const status = [
+  { name: 'Staking state machine', status: 'shipped', note: 'two pools, shares, boundary pipeline' },
+  { name: 'Epoch rotation', status: 'shipped', note: 'genesis seeding, boundary, gossiped EpochCerts' },
+  { name: 'DKG group key on chain', status: 'shipped', note: 'committed by an independent path' },
+  { name: 'Validator registration', status: 'designed', note: 'no applier; needs proof-of-possession' },
+  { name: 'Commission setting', status: 'designed', note: 'nothing sets CommissionBps yet' },
+  { name: 'Rewards and payouts', status: 'designed', note: 'fees are burned; no issuance configured' },
+  { name: 'Slash detection', status: 'designed', note: 'penalty applies correctly; nothing raises evidence' },
+] as const;
+---
+
+<Base
+  current="validators"
+  title="Validators — Yoalto"
+  description="How staking, epochs and slashing are designed on Yoalto — two pools, shares not coins, and a boundary whose step order is a correctness contract."
+>
+  <PageHead
+    crumb="Validators"
+    title="Stake, epochs<br />and slashing."
+    lead="This page describes a staking system that is built but not yet open. Yoalto runs genesis validators only: there is no registration path, no reward issuance, and nothing that raises slashing evidence. What follows is the mechanism as implemented, not an invitation to join a network."
+  />
+
+  <section class="sec">
+    <div class="wrap">
+      <Note>
+        You cannot currently become a Yoalto validator. <span class="mono">RegisterValidatorAction</span>
+        has no applier, and registration needs proof-of-possession first — addresses derive from
+        public BLS keys, so without it an address could be squatted. There is also no reward path:
+        transaction fees are burned.
+      </Note>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <div class="split">
+        <div>
+          <div class="eyebrow">Staking</div>
+          <h2 style="margin:12px 0 8px">Every staking action has two legs.</h2>
+          <Steps steps={legs} />
+        </div>
+        <div>
+          <SpecTable heading="Pool accounting" rows={pools} />
+          <div style="margin-top:20px">
+            <Note>
+              Rewards and slashes move the pool, not the share count. Everyone in a pool appreciates
+              or dilutes together, pro&#8209;rata, with no per&#8209;holder bookkeeping to maintain
+              and nothing to iterate over at a boundary.
+            </Note>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="wrap">
+      <div class="eyebrow">The boundary</div>
+      <h2 style="margin:12px 0 18px;max-width:780px">Five steps whose order is the correctness argument.</h2>
+      <p class="dim" style="max-width:660px;font-size:16px;line-height:1.6">
+        At each epoch boundary the chain runs exactly this sequence:
+      </p>
+      <div class="mono" style="margin:24px 0 8px;font-size:14px;color:oklch(.86 .1 190);line-height:2;overflow-x:auto">
+        slash → rewards → activate pending → mature exits → snapshot weights
+      </div>
+      <p class="dim" style="max-width:660px;font-size:16px;line-height:1.6;margin-top:16px">
+        A wrong order here does not crash and consensus cannot catch it, because every node would be
+        wrong identically. Slashing before rewards stops a validator earning on stake it is about to
+        lose; activating after rewards is what keeps new stake from collecting a payout it was not
+        present for. Each binding pair has a test named for it, verified by mutation.
+      </p>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <div class="split">
+        <div>
+          <div class="eyebrow">Slashing</div>
+          <h2 style="margin:12px 0 18px">Two reasons, both defined.</h2>
+          <Lines
+            rows={[
+              { label: 'Equivocation', value: 'Signing two conflicting proposals at one view' },
+              { label: 'Downtime', value: 'Persistent failure to participate' },
+            ]}
+          />
+          <p class="muted" style="font-size:14.5px;line-height:1.6;margin-top:20px;max-width:520px">
+            A slash burns a fraction of both pools. Exiting stake stays liable for faults committed
+            while it was active — excluding it would let a validator escape most of a penalty by
+            having merely started to leave. It is also what makes a queued exit's payout fall
+            automatically, with no per&#8209;entry bookkeeping.
+          </p>
+          <div style="margin-top:22px">
+            <Note>
+              Nothing writes to the slash queue yet. Turning equivocation and downtime into evidence
+              is its own body of work. The step exists and runs first at every boundary because
+              retrofitting it later would mean re-deriving the ordering that the reward and exit
+              arithmetic depends on.
+            </Note>
+          </div>
+        </div>
+        <div>
+          <div class="eyebrow">A validator is a cluster</div>
+          <h2 style="margin:12px 0 18px">Not a machine.</h2>
+          <p class="muted" style="font-size:14.5px;line-height:1.6;max-width:520px">
+            One validator runs three components — a reactor for consensus and execution, a broker for
+            P2P, DKG and the random beacon, and an API server — as a pod cluster sharing one
+            FoundationDB cluster. The 256 partitions are spread across pods, so capacity is added by
+            scaling out rather than by moving to a bigger host.
+          </p>
+          <div style="margin-top:20px">
+            <Lines
+              rows={[
+                { label: 'Consensus + execution', value: 'reactor' },
+                { label: 'P2P, DKG, beacon', value: 'broker (libp2p)' },
+                { label: 'Public API', value: 'JSON-RPC 2.0 over HTTP + WS' },
+                { label: 'State', value: 'FoundationDB, sparse Merkle tree' },
+                { label: 'Internal messaging', value: 'NATS' },
+                { label: 'Packaging', value: 'Helm chart, reconciled by Flux' },
+              ]}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec sec-t">
+    <div class="wrap">
+      <div class="eyebrow">Status</div>
+      <h2 style="margin:12px 0 28px">Where staking actually stands.</h2>
+      <div style="margin-bottom:32px"><StatusBar items={status} /></div>
+      <DataTable headers={['Component', 'Status', 'Notes']}>
+        {status.map((r) => (
+          <tr>
+            <td>{r.name}</td>
+            <td><StatusTag status={r.status} /></td>
+            <td class="muted">{r.note}</td>
+          </tr>
+        ))}
+      </DataTable>
+    </div>
+  </section>
+</Base>

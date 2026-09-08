@@ -1,0 +1,221 @@
+---
+import Base from '../layouts/Base.astro';
+import PageHead from '../components/PageHead.astro';
+import SpecTable from '../components/SpecTable.astro';
+import Steps from '../components/Steps.astro';
+import Lines from '../components/Lines.astro';
+import Note from '../components/Note.astro';
+import DataTable from '../components/DataTable.astro';
+import PartitionMap from '../components/PartitionMap.astro';
+
+const lifecycle = [
+  {
+    title: 'Home partition',
+    body: `Every account's home partition is derived by hashing its identity — MurmurHash3-32
+      over the claim hash, mapped into [1, 255]. Any client computes it before sending;
+      no sequencer assigns it, and it never moves.`,
+  },
+  {
+    title: 'SEND',
+    body: `On the sender's home partition: debit the balance, advance the account's nonce, and
+      emit a commitment. It finalizes there, without waiting on the recipient's partition or
+      taking a lock anywhere else.`,
+  },
+  {
+    title: 'RECEIVE',
+    body: `On the recipient's home partition: verify the SEND against a Merkle proof and the
+      signed quorum certificate that finalized it, then credit. The two halves are independent
+      transactions — this is the pattern Nano proved in production.`,
+  },
+  {
+    title: 'Finality',
+    body: `HotStuff finalizes each partition's blocks under a 2&#8209;chain commit rule with a
+      2n/3+1 threshold. Leaders are drawn per (partition, view) by deterministic
+      stake&#8209;weighted election, so no single node proposes for all 256 partitions at once.`,
+  },
+];
+
+const params = [
+  { label: 'Target block time', value: '500 ms' },
+  { label: 'Views per epoch', value: '172,800 (~24 h)' },
+  { label: 'Commit rule', value: '2-chain' },
+  { label: 'Fault tolerance', value: '2n/3 + 1' },
+  { label: 'Leader election', value: 'stake-weighted, per (partition, view)' },
+  { label: 'Validator-set change', value: 'signed EpochCert' },
+  { label: 'Aggregate signature', value: 'BLS · 48 bytes' },
+  { label: 'Randomness', value: 'DKG group key, committed on chain' },
+];
+
+const crypto = [
+  { label: 'Validator signatures', value: 'BLS (supranational/blst)' },
+  { label: 'Account signatures', value: 'Ed25519' },
+  { label: 'Account identity', value: 'claim_hash = sha3(initial_pubkey)' },
+  { label: 'Attestation hashing', value: 'SHA-256' },
+];
+
+const assumptions = [
+  { label: 'Honest majority', value: 'More than two thirds of voting power behaves honestly' },
+  { label: 'Network', value: 'Partial synchrony; HotStuff pacemaker drives view changes' },
+  { label: 'Validator set', value: 'One set across all partitions, rotated by signed EpochCert' },
+  { label: 'Determinism', value: 'Handlers read only their own partition; cross-partition writes are unique-keyed' },
+  { label: 'Epoch parameters', value: 'On chain — a node reading them from config would compute a different state root' },
+];
+
+const gaps = [
+  { label: 'Validator registration', value: 'Genesis validators only; needs proof-of-possession first' },
+  { label: 'Validator rewards', value: 'Not built — fees are burned' },
+  { label: 'Slashing', value: 'Two reasons defined; fault detection not built' },
+  { label: 'Mempool gossip', value: 'None between validators; each is fed by its own submit subject' },
+  { label: 'Reorg / unfinalize', value: 'No unwind path — 2-chain commit is treated as final' },
+  { label: 'Fee market', value: 'Fee is ≥ 0 and burned; no priority fees' },
+  { label: 'Post-quantum signatures', value: 'Ed25519 only; the migration path is designed, not built' },
+  { label: 'External audit', value: 'None. One internal adversarial review, 2026-07' },
+];
+---
+
+<Base
+  current="protocol"
+  title="Protocol — Yoalto"
+  description="How Yoalto splits execution across 256 partitions, settles payments with SEND/RECEIVE, and rotates one validator set with signed EpochCerts."
+>
+  <PageHead
+    crumb="Protocol"
+    title="One validator set.<br />255 payment lanes."
+    lead="Yoalto separates where a payment executes from who agrees on it. One validator set finalizes every partition under HotStuff; each account lives on exactly one partition and its payments execute only there. Nothing on the payment path needs a cross&#8209;partition lock."
+  />
+
+  <section class="sec" id="architecture">
+    <div class="wrap">
+      <div class="eyebrow">Architecture</div>
+      <h2 style="margin:12px 0 32px;max-width:700px">Three layers, no shared bottleneck.</h2>
+      <div class="diag">
+        <div class="dbox">
+          <div class="dbox-h">
+            <b>Consensus · HotStuff, per partition</b>
+            <span class="mono dim" style="font-size:11px">2-chain commit · 500 ms views · 2n/3+1</span>
+          </div>
+        </div>
+        <div class="dlink"><i></i><span>↓ finalized blocks, per partition</span></div>
+        <div class="dbox">
+          <div class="dbox-h">
+            <b>256 partitions</b>
+            <span class="mono dim" style="font-size:11px">chain 0 system · 0x01 → 0xFF payments</span>
+          </div>
+          <div style="margin:14px 0 12px"><PartitionMap compact /></div>
+          <span class="mono dim" style="font-size:11px">deterministic account residence · local reads only</span>
+        </div>
+        <div class="dlink"><i></i><span>↓ state apply</span></div>
+        <div class="dbox">
+          <div class="dbox-h">
+            <b>Storage · shared FoundationDB cluster</b>
+            <span class="mono dim" style="font-size:11px">sparse Merkle tree (JMT) · partitions spread across pods</span>
+          </div>
+        </div>
+      </div>
+      <p class="dim" style="font-size:13.5px;line-height:1.6;margin-top:18px;max-width:680px">
+        A validator is the whole bottom two layers: a pod cluster over one FoundationDB cluster,
+        not a single machine. Adding capacity means adding pods.
+      </p>
+    </div>
+  </section>
+
+  <section class="sec" id="lifecycle">
+    <div class="wrap">
+      <div class="split">
+        <div>
+          <div class="eyebrow">Transaction lifecycle</div>
+          <h2 style="margin:12px 0 8px">How a payment settles.</h2>
+          <Steps steps={lifecycle} />
+        </div>
+        <div>
+          <SpecTable heading="Consensus parameters" rows={params} />
+          <div style="margin-top:20px">
+            <Note>
+              Epoch parameters live on chain rather than in node config. Every value changes what
+              the epoch boundary computes, so a node reading them from a file would write a
+              different state root and fall out of consensus.
+            </Note>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="crypto">
+    <div class="wrap">
+      <div class="eyebrow">Cryptography</div>
+      <h2 style="margin:12px 0 18px;max-width:780px">Not post-quantum. Built to become so in one transaction.</h2>
+      <p class="dim" style="max-width:640px;font-size:16px;line-height:1.6">
+        Yoalto signs consensus with BLS and user transactions with Ed25519. Neither is
+        post&#8209;quantum, and this page will not pretend otherwise. What the design does provide
+        is a migration that costs one transaction rather than a chain&#8209;wide event: an account's
+        external address is a claim hash fixed when the account opens, held separately from the key
+        that signs for it. Rotating to a different scheme changes the key, not the address, so
+        nobody's sends or receives break.
+      </p>
+      <div style="margin-top:32px;max-width:620px">
+        <Lines rows={crypto} onBand />
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="partitions">
+    <div class="wrap">
+      <div class="eyebrow">Comparison</div>
+      <h2 style="margin:12px 0 28px">Where the parallelism actually comes from.</h2>
+      <DataTable headers={['Property', 'Single-chain L1', 'Rollup stack', 'Yoalto']}>
+        <tr>
+          <td>Execution parallelism</td><td>1 lane</td><td>1 lane per rollup</td>
+          <td><b>255 payment partitions</b></td>
+        </tr>
+        <tr>
+          <td>Payment model</td><td>Global state</td><td>Bridged, async</td>
+          <td><b>SEND / RECEIVE, per partition</b></td>
+        </tr>
+        <tr>
+          <td>Cross-partition atomicity</td><td>Atomic</td><td>Bridged</td>
+          <td><b>None — by design</b></td>
+        </tr>
+        <tr>
+          <td>Validator scaling</td><td>Vertical</td><td>Vertical</td>
+          <td><b>Horizontal — pods over FoundationDB</b></td>
+        </tr>
+        <tr>
+          <td>Validator-set propagation</td><td>Global</td><td>Per rollup</td>
+          <td><b>Signed EpochCerts, 48 bytes</b></td>
+        </tr>
+        <tr>
+          <td>Added trust assumption</td><td>—</td><td>Bridge + prover</td><td><b>None</b></td>
+        </tr>
+      </DataTable>
+      <p class="dim" style="font-size:13px;margin-top:14px;max-width:680px">
+        These are architectural properties, not benchmark results. No throughput comparison appears
+        here because Yoalto has not published one.
+      </p>
+    </div>
+  </section>
+
+  <section class="sec sec-t" id="security">
+    <div class="wrap">
+      <div class="split">
+        <div>
+          <div class="eyebrow">Security model</div>
+          <h2 style="margin:12px 0 18px">Assumptions, stated plainly.</h2>
+          <Lines rows={assumptions} />
+        </div>
+        <div>
+          <div class="eyebrow">Known gaps</div>
+          <h2 style="margin:12px 0 18px">And what is not done yet.</h2>
+          <Lines rows={gaps} />
+          <div style="margin-top:22px">
+            <Note>
+              The 2026-07 review was internal: roughly 41k lines across 104 packages, twelve
+              findings, all fixed. It did not conclude the codebase was clean, and no external
+              firm has audited any of this.
+            </Note>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>

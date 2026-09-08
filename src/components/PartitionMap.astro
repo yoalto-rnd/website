@@ -1,0 +1,31 @@
+---
+// The partition address space: chain 0 plus 255 native-payment partitions, 0x00 → 0xFF.
+//
+// The comp used this as a live load display ("256 / 256 active", varying cell intensity,
+// a link to an explorer). There is no network and no telemetry, so cells are shaded by
+// their POSITION in the address space instead — a real property, and one that keeps the
+// block as lively as the comp's without implying traffic anyone can measure.
+//
+// Chain 0 takes the amber accent because it is a different kind of chain: it holds
+// staking, the validator set and epoch transitions, and no user account ever lands there.
+interface Props {
+  /** 'strip' = four rows of 64; 'grid' = a 16x16 block. */
+  variant?: 'strip' | 'grid';
+  /** Compact rows, for use inside a diagram. */
+  compact?: boolean;
+}
+const { variant = 'strip', compact = false } = Astro.props;
+
+const partitions = Array.from({ length: 256 }, (_, i) => i);
+const tone = (i: number) => `p${Math.min(4, Math.floor(i / 52))}`;
+const hex = (i: number) => `0x${i.toString(16).padStart(2, '0')}`;
+---
+
+<div class:list={[variant === 'grid' ? 'sgrid' : 'strip', compact && 'strip-sm']}>
+  {partitions.map((i) => (
+    <span
+      class={i === 0 ? 'sys' : tone(i)}
+      title={i === 0 ? 'chain 0 — system chain' : `partition ${hex(i)}`}
+    ></span>
+  ))}
+</div>

@@ -1,0 +1,14 @@
+---
+// The comp's numbered feature row — `01` in mono accent beside a heading, body text
+// indented to align under the heading. Repeated eight times across index and about.
+interface Props {
+  num: string;
+  title: string;
+}
+const { num, title } = Astro.props;
+---
+
+<div class="feat">
+  <div class="feat-h"><b>{num}</b><h3>{title}</h3></div>
+  <p><slot /></p>
+</div>

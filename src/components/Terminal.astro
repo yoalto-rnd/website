@@ -1,0 +1,34 @@
+---
+// Terminal transcript. `kind` maps to the comp's classes:
+//   comment → .c with a '#' gutter    cmd   → plain with '$'
+//   ok      → .ok with '~'            note  → .ar with '~'
+//   gap     → .sp spacer              caret → blinking cursor line
+//
+// Whatever goes in here must be a command that actually exists. The comp invented a
+// `curl -sSf get.yoalto.dev | sh` installer and a `yoalto deploy` subcommand; neither is
+// real. Check ../yoalto/apps/cli before adding a line — see CLAUDE.md.
+interface Props {
+  title: string;
+  meta?: string;
+  lines: readonly { kind: string; text?: string }[];
+}
+const { title, meta, lines } = Astro.props;
+
+const cls: Record<string, string> = { comment: 'c', cmd: '', ok: 'ok', note: 'ar' };
+const gutter: Record<string, string> = { comment: '#', cmd: '$', ok: '~', note: '~' };
+---
+
+<div class="term">
+  <div class="term-h"><span>{title}</span>{meta && <span>{meta}</span>}</div>
+  <div class="term-b">
+    {lines.map((l) =>
+      l.kind === 'gap' ? (
+        <div class="sp"></div>
+      ) : l.kind === 'caret' ? (
+        <div><i>$</i><span class="caret"></span></div>
+      ) : (
+        <div class={cls[l.kind]}><i>{gutter[l.kind]}</i><span>{l.text}</span></div>
+      )
+    )}
+  </div>
+</div>

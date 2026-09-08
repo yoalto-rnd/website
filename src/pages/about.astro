@@ -1,0 +1,122 @@
+---
+import Base from '../layouts/Base.astro';
+import PageHead from '../components/PageHead.astro';
+import Feature from '../components/Feature.astro';
+import Lines from '../components/Lines.astro';
+import Note from '../components/Note.astro';
+import { site } from '../config';
+
+// The comp's About page carried six invented people, a fabricated 2023-2026 history, a
+// Swiss foundation, governance parameters, a funding round and nine open roles. None of
+// it is verifiable, so all of it is gone. See CLAUDE.md.
+
+const facts = [
+  { label: 'What it is', value: 'A Layer 1 for parallel native payments' },
+  { label: 'Language', value: 'Go — a workspace monorepo' },
+  { label: 'License', value: 'Apache-2.0' },
+  { label: 'Partitions', value: '256 — chain 0 plus 255 payment lanes' },
+  { label: 'Consensus', value: 'HotStuff, per partition, one validator set' },
+  { label: 'Storage', value: 'FoundationDB with a sparse Merkle tree' },
+  { label: 'Native token', value: 'YOA — gas and stake' },
+  { label: 'Stage', value: 'Pre-mainnet; private development clusters' },
+];
+---
+
+<Base
+  current="about"
+  title="About — Yoalto"
+  description="What Yoalto is, where it came from, and the commitments this site holds itself to."
+>
+  <PageHead
+    crumb="About"
+    title="A payment chain,<br />mid-construction."
+    lead="Yoalto is a Layer 1 built around one idea: that most payments never need to touch each other, so they should not have to queue behind each other. It is written in Go, licensed Apache&#8209;2.0, and it is not finished."
+  />
+
+  <section class="sec" id="principles">
+    <div class="wrap">
+      <div class="eyebrow">Principles</div>
+      <h2 style="margin:12px 0 32px;max-width:640px">Four commitments we can be held to.</h2>
+      <div class="g2">
+        <Feature num="01" title="Ship the hard part first">
+          Parallel execution and deterministic account residence were built before any of the
+          conveniences that sit on top of them. Deferred fundamentals become migrations, and
+          migrations are where chains break.
+        </Feature>
+        <Feature num="02" title="Specify, then implement">
+          The sync design, the cert protocol and the transaction roadmap were written before the
+          code that implements them, and they are still the thing new work is scoped against
+          rather than rediscovered from.
+        </Feature>
+        <Feature num="03" title="Publish the unflattering numbers">
+          Every page on this site lists what is not built alongside what is. The status tables are
+          generated from the same document the team plans against, not from a marketing summary of
+          it.
+        </Feature>
+        <Feature num="04" title="No figure without a method">
+          There is no throughput number anywhere on this site, because none has been measured on a
+          network. When there is one it will arrive with the harness, the hardware and the failure
+          cases attached.
+        </Feature>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec sec-t">
+    <div class="wrap">
+      <div class="split">
+        <div>
+          <div class="eyebrow">In brief</div>
+          <h2 style="margin:12px 0 18px">The short version.</h2>
+          <Lines rows={facts} />
+        </div>
+        <div>
+          <div class="eyebrow">History</div>
+          <h2 style="margin:12px 0 18px">It used to be called Flink.</h2>
+          <p class="lead" style="max-width:100%">
+            Yoalto grew out of Flink, a feeless block&#8209;lattice payment network. The name
+            changed and so did the architecture: the block&#8209;lattice gave way to 256
+            HotStuff&#8209;finalized partitions over a shared FoundationDB cluster, and the
+            Nano&#8209;style SEND/RECEIVE pattern is the part that survived the rewrite.
+          </p>
+          <p class="lead" style="max-width:100%;margin-top:16px">
+            Artefacts from that era are still around — the whitepaper in the repository describes
+            the old design, and its performance figures belong to it rather than to Yoalto. They
+            are not reproduced on this site.
+          </p>
+          <div style="margin-top:22px">
+            <Note>
+              There is no foundation, no funding announcement, no token sale and no published
+              tokenomics. If you read any of those about Yoalto somewhere, it did not come from
+              here.
+            </Note>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="wrap">
+      <div class="split" style="align-items:center">
+        <div>
+          <h2>Source and licence.</h2>
+          <p class="dim" style="margin-top:16px;font-size:16px;line-height:1.6;max-width:520px">
+            Yoalto is Apache&#8209;2.0. The repository is private for now, which means the licence
+            is a statement of intent rather than something you can act on yet — worth saying
+            outright rather than leaving "open source" to do the work.
+          </p>
+        </div>
+        <div>
+          <div style="border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:20px">
+            <div class="eyebrow">Repository</div>
+            <div class="mono" style="font-size:13.5px;margin:8px 0 6px">
+              {site.sourceIsPublic ? 'github.com/yoalto-rnd/yoalto' : 'github.com/yoalto-rnd/yoalto — private'}
+            </div>
+            <div class="dim" style="font-size:12.5px">Go monorepo · Apache-2.0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>

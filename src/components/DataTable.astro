@@ -1,0 +1,20 @@
+---
+// Wide tables scroll inside their own container rather than making the page scroll
+// horizontally — that is what .tbl-scroll is for, and it matters on the comparison and
+// capability tables at 375px.
+interface Props {
+  headers: string[];
+}
+const { headers } = Astro.props;
+---
+
+<div class="tbl tbl-scroll">
+  <table>
+    <thead>
+      <tr>{headers.map((h) => <th>{h}</th>)}</tr>
+    </thead>
+    <tbody>
+      <slot />
+    </tbody>
+  </table>
+</div>

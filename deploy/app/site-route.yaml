@@ -1,0 +1,55 @@
+# Public routing for yoalto.com. CANONICAL HOST: the apex, yoalto.com. www 301s to it.
+#
+# Apex rather than www, unlike GarageMechanic. That site chose www because its URL is
+# printed on paper certificates where a bare domain could be mistaken for a company name.
+# Nothing here is printed, the audience arrives from a link, and the site serves no
+# authenticated paths — so the cookie-scope argument for www does not apply either.
+#
+# EVERYTHING ON THIS HOST IS PUBLIC and should stay that way. Do not add an authenticated
+# path here: `/` is a catch-all, so anything nobody remembered to list would be silently
+# public. An authenticated surface belongs on its own hostname.
+#
+# PREREQUISITE — none of this applies yet. There is no Gateway for Yoalto and no DNS for
+# yoalto.com on these clusters. The Gateway, its listeners, the TLS certificate and the
+# Flux root all live in the `infra` repository, which this repo does not modify. See
+# deploy/README.md for the handoff.
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: website
+  namespace: yoalto-website
+spec:
+  parentRefs:
+    - name: yoalto
+      namespace: envoy-gateway-system
+      sectionName: https-apex
+  hostnames:
+    - yoalto.com
+  rules:
+    - matches:
+        - path: { type: PathPrefix, value: / }
+      backendRefs:
+        - name: website
+          port: 8080
+---
+# www → apex, 301. Path is deliberately not set: Gateway API leaves it unchanged, which is
+# what we want, so do not "helpfully" add one.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: www-redirect
+  namespace: yoalto-website
+spec:
+  parentRefs:
+    - name: yoalto
+      namespace: envoy-gateway-system
+      sectionName: https
+  hostnames:
+    - www.yoalto.com
+  rules:
+    - filters:
+        - type: RequestRedirect
+          requestRedirect:
+            hostname: yoalto.com
+            statusCode: 301

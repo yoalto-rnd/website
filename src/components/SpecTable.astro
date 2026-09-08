@@ -1,0 +1,14 @@
+---
+interface Props {
+  heading?: string;
+  rows: { label: string; value: string }[];
+}
+const { heading, rows } = Astro.props;
+---
+
+<div class="spec">
+  {heading && <div class="spec-h eyebrow">{heading}</div>}
+  {rows.map((r) => (
+    <div class="spec-r"><span>{r.label}</span><span>{r.value}</span></div>
+  ))}
+</div>

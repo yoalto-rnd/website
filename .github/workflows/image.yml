@@ -1,0 +1,59 @@
+# Build the site, verify it, and publish the image.
+#
+# factcheck runs before the image is pushed AND again inside the Docker build. The
+# duplication is deliberate: the in-image check is what makes a bad artifact impossible to
+# produce at all, and the CI check is what gives a pull request a readable failure.
+name: image
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: No fabricated claims
+        run: ./scripts/factcheck.sh dist
+      - name: No dead internal links
+        run: ./scripts/linkcheck.sh dist
+      - name: No client JavaScript
+        # The design needs none. A <script> tag appearing here is a design decision that
+        # should be made deliberately, not one that arrives with a dependency.
+        run: |
+          if grep -rl '<script' dist --include='*.html'; then
+            echo "unexpected <script> in build output" >&2
+            exit 1
+          fi
+          echo "✓ no client JavaScript"
+
+  image:
+    needs: verify
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push
+        run: |
+          TAG=$(git rev-parse --short=12 HEAD)
+          docker build -t ghcr.io/yoalto-rnd/website:$TAG .
+          docker push ghcr.io/yoalto-rnd/website:$TAG
+          echo "pushed ghcr.io/yoalto-rnd/website:$TAG"
+          echo "pin this tag in deploy/app/website.yaml" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,16 @@
+---
+// Label/value rows separated by hairlines. The comp uses this for parameter lists and
+// timelines; the label is mono and dimmed, the value is body text.
+interface Props {
+  rows: { label: string; value: string }[];
+  /** For use inside a dark .band section, where the hairlines need to be light. */
+  onBand?: boolean;
+}
+const { rows, onBand = false } = Astro.props;
+---
+
+<div class:list={['lines', onBand && 'lines-band']}>
+  {rows.map((r) => (
+    <div><span>{r.label}</span><span>{r.value}</span></div>
+  ))}
+</div>
