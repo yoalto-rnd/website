@@ -45,14 +45,17 @@ make check       # build + factcheck + linkcheck
 GitHub Pages, published by `.github/workflows/pages.yml` on every push to `main`. A push
 to `main` is a deploy.
 
-`public/CNAME` holds the custom domain (`yoalto.com`); GitHub issues the TLS certificate.
+`public/CNAME` holds the custom domain (`www.yoalto.com`); GitHub issues the TLS
+certificate. www is canonical and the apex redirects to it.
 If that file ever goes missing from the build, Pages drops back to a `github.io` address
 and every inbound link breaks — `make check` and CI both assert it is there.
 
-DNS for the apex points at GitHub's Pages addresses:
+DNS: `www` is a CNAME to `yoalto-rnd.github.io`, and the apex keeps A records pointing at
+GitHub's Pages addresses so that Pages can redirect it to www.
 
 ```
 185.199.108.153   185.199.109.153   185.199.110.153   185.199.111.153
 ```
 
-with `www.yoalto.com` as a CNAME to `yoalto-rnd.github.io`.
+All records are DNS-only in Cloudflare (grey cloud) — proxying them breaks GitHub's
+certificate issuance.

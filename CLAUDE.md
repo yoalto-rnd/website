@@ -1,6 +1,7 @@
 # Working in this repo
 
-This repo is the public website for Yoalto, served at **yoalto.com**. It is an Astro
+This repo is the public website for Yoalto, served at **www.yoalto.com** (the apex
+redirects there). It is an Astro
 project that builds to static HTML — no client JavaScript, no server-side rendering.
 
 ## Never write outside this repo
@@ -84,7 +85,7 @@ make check      # build + factcheck + linkcheck — what CI runs
 
 ## Deploying is a push
 
-The site is served by **GitHub Pages** at `yoalto.com`, published by
+The site is served by **GitHub Pages** at `www.yoalto.com`, published by
 `.github/workflows/pages.yml` on every push to `main`. There is no image, no cluster and
 no ingress — treat a push to `main` as a deploy.
 
